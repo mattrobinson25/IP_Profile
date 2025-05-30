@@ -41,7 +41,6 @@ except pd.errors.DatabaseError as e:
         logger.info('Exiting.')
         exit()
 
-
 # Dates and timestamps
 today_timestamp = dt.strptime(dt.now().strftime('%x'), '%x').timestamp()  # Midnight timestamp
 yesterday_timestamp = dt.strptime((dt.now() - td(days=1)).strftime('%x'),'%x').timestamp()  # Yesterday midnight timestamp

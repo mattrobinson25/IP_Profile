@@ -2,7 +2,6 @@
 import gzip
 import requests
 import logging
-from sys import stdout
 from importlib import import_module
 from urllib3.exceptions import ReadTimeoutError, DecodeError
 from requests.exceptions import ReadTimeout, ContentDecodingError
@@ -12,6 +11,7 @@ from datetime import datetime, timedelta
 import pickle
 import sqlite3
 from admintools import MyLogger
+import json
 
 # User defined vars
 working_dir: str = '/nfs_share/matt_desktop/server_scripts/ip_profile'
@@ -32,7 +32,7 @@ if not isdir(working_dir):
     working_dir = './'
 
 
-# DEFAULTS
+# Log Dates - Some distros may log dates and times slightly differently
 sql_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
 http_log_date = (datetime.now() - timedelta(days=1)).strftime('%d/%b/%Y')
 ssh_log_date = (datetime.now() - timedelta(days=1)).strftime('%b %e')
@@ -67,6 +67,18 @@ logger = MyLogger(
 ).logger
 
 
+def convert_to_sql_type(dictionary: dict) -> dict:
+    sql_types = [int, float, str]
+
+    for key in dictionary:
+        val, val_type = dictionary[key], type(dictionary[key])
+
+        if val_type not in sql_types:
+            dictionary[key] = json.dumps(val)  # converts to str
+
+    return dictionary
+
+
 def import_module_by_str(mod) -> None:
     globals()[mod] = import_module(mod)
 
@@ -78,7 +90,11 @@ def os_release() -> dict[str, str]:
     release: dict[str, str] = {}
 
     for element in text:
-        if element and '=' in element and not element.startswith('#'):
+        if (
+                element
+                and '=' in element
+                and not element.startswith('#')
+        ):
             items: list[str] = element.split('=')
             k: str = items[0]
             v: str = items[1]
@@ -175,12 +191,15 @@ match distro:
     case 'ubuntu' | 'debian':
         auth_file_dir = '/var/log/apache2/'  # http log files directory
         ssh_log_files = [f'/var/log/{file}' for file in listdir('/var/log/') if file.startswith('auth.log')]
-    case 'centos' | 'rhel' | 'rocky':
+
+    case 'centos' | 'rhel' | 'rocky' | 'almalinux' | 'fedora':
         auth_file_dir = '/var/log/httpd/'  # http log files directory
         ssh_log_files = [f'/var/log/{file}' for file in listdir('/var/log/') if file.startswith('secure')]
+
     case _:
         logging.warning(f'Unsupported OS -- {distro}')
-        raise NotImplementedError('This distro is not supported - only supports Ubuntu, CentOs, and RHEL.')
+        raise NotImplementedError(f'{distro.title()} is not currently supported.'
+                                  f' Only supports Ubuntu, Debian, CentOs, RHEL, Rocky, AlmaLinux, and Fedora')
 
 http_log_files = [
     f'{auth_file_dir}/{file}'

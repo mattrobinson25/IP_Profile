@@ -4,7 +4,7 @@ import pandas as pd
 import json
 from time import sleep
 from ip_profile_lib import (
-    ip_info, log_reader, ApiConnectionErrors, ssh_log_files, handle_failed_requests,
+    ip_info, log_reader, ApiConnectionErrors, ssh_log_files, handle_failed_requests, convert_to_sql_type,
     LAN_prefix, trusted_ips, my_token, ssh_log_date, db_con, sql_date, db_cursor, logger
 )
 
@@ -59,15 +59,15 @@ for ssh_log_file in ssh_log_files:
         if ('Connection closed by invalid user' in line
                 and ssh_log_date in line
                 and LAN_prefix not in line):
-            line_elements = (2, 10, 11)
+            line_elements = (2, 10, 11)  # (2, -5, -4)
         elif ('Connection closed by authenticating user' in line
               and ssh_log_date in line
               and LAN_prefix not in line):
-            line_elements = (2, 10, 11)
+            line_elements = (2, 10, 11)  # (2, -5, -4)
         elif ('Disconnected from invalid user' in line
               and ssh_log_date in line
               and LAN_prefix not in line):
-            line_elements = (2, 9, 10)
+            line_elements = (2, 9, 10)  # (2, -5, -4)
         elif ('Disconnected from authenticating user' in line
               and ssh_log_date in line
               and LAN_prefix not in line):
@@ -96,7 +96,7 @@ for ssh_log_file in ssh_log_files:
                 ip = line.split()[z-1]  # 'ip' needs to be offset by -1 in .split(). And 'time' element is unaffected
 
             if ip not in trusted_ips:   # Trusted ips will not be recorded
-                # Check to see how many prior attempts were made
+                # Check to see how many prior attempts were made yesterday
                 ip_entries = df_ssh[
                     (df_ssh.ip == ip) &
                     (df_ssh.user == user) &
@@ -111,9 +111,12 @@ for ssh_log_file in ssh_log_files:
                         entry['attempts']: int = 1
                         entry['time']: str = time
                         entry['attempt_times']: str = json.dumps([time])  # convert python list to sql text
+                        entry = convert_to_sql_type(entry)
+
                         # Concat with old DataFrame
                         df_entry = pd.DataFrame([entry])  # Convert to DataFrame
                         df_ssh = pd.concat([df_ssh, df_entry], ignore_index=True)
+
                     except ApiConnectionErrors as e:
                         failed_entry: dict = {
                             'ip': ip,

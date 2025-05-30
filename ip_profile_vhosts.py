@@ -3,6 +3,7 @@ from sys import argv
 import json
 import pandas as pd
 from time import sleep
+from os.path import isfile
 from ip_profile_lib import (
     ip_info, log_reader, trusted_ips, sql_date, http_log_date, LAN_prefix, http_log_files,
     logger, db_cursor, vhosts, my_token, ApiConnectionErrors, handle_failed_requests, db_con
@@ -11,6 +12,7 @@ from ip_profile_lib import (
 
 script_name = argv[0]
 failed_requests = []
+http_log_files = [file for file in http_log_files if isfile(file)]
 
 for vhost in vhosts:
     # Try to get table from database (if exists)
@@ -50,7 +52,11 @@ for vhost in vhosts:
     counter = 0
 
     for log_file in http_log_files:
-        lines = log_reader(log_file)  # Generator based on the lines of the log file
+        try:
+            lines = log_reader(log_file)  # Generator based on the lines of the log file
+        except FileNotFoundError as e:
+            logger.error(e)
+            continue
 
         for line in lines:
             ip = line.split()[0]
@@ -82,7 +88,9 @@ for vhost in vhosts:
                         df = pd.concat(objs=[df, df_entry], ignore_index=True)
 
                     except ApiConnectionErrors as error:
-                        failed_request = {'ip': ip, 'time': time, 'date': sql_date, 'line': line, 'script': 'vhost'}
+                        failed_request = {
+                            'ip': ip, 'time': time, 'date': sql_date, 'line': line, 'script': 'vhost'
+                        }
                         failed_requests.append(failed_request)
                         logger.error(line)
                         logger.error(error)
