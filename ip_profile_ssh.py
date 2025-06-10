@@ -8,11 +8,6 @@ from ip_profile_lib import (
     LAN_prefix, trusted_ips, my_token, ssh_log_date, db_con, sql_date, db_cursor, logger
 )
 
-
-# Defaults
-script_name = argv[0]
-trusted_ips_counter = 0
-
 # Try to get table from database if exists, or create new one
 try:
     df_ssh = pd.read_sql('select * from ssh_user', db_con)
@@ -50,6 +45,8 @@ except pd.errors.DatabaseError as e:
 logger.info(' SSH USERNAMES '.center(40, "#"))
 failed_requests = []
 logger.debug(ssh_log_files)
+
+trusted_ips_counter = 0
 
 # Go through the ssh auth files and find IP addresses that failed to connect.
 for ssh_log_file in ssh_log_files:
