@@ -528,11 +528,9 @@ class MyLogger(logging.Logger):
         self.CRITICAL : int = 50
 
         if to_console:
-            self.to_console = logging.StreamHandler(stdout)
-            self.logger.addHandler(self.to_console)
+            self.logger.addHandler(logging.StreamHandler(stdout))
         if to_file:
-            self.to_file = logging.FileHandler(to_file)
-            self.logger.addHandler(self.to_file)
+            self.logger.addHandler(logging.FileHandler(to_file))
             self.to_file.setFormatter(self.fmt)
 
         self.logger.setLevel(level)
