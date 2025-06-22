@@ -371,7 +371,6 @@ class DiskMount:
 
     def find_mountpoint(self) -> str:
         """Checks to see if disk partition is already mounted"""
-
         mount_point = None
 
         mount_output = subprocess.run(
@@ -510,7 +509,7 @@ class MyLogger(logging.Logger):
                  name : str = argv[0],
                  level : int = logging.INFO,
                  fmt : str = '%(asctime)s: %(message)s',
-                 to_file : str | bool = False,  # path to file (does not need to exist), or False to ignore file
+                 to_file : str | bool = False,   # path to file (does not need to exist), or False to ignore file
                  to_console : bool = True):      # True to output to console, or False to ignore console
 
         super().__init__(name, level)
