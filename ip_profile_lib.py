@@ -29,7 +29,7 @@ LAN_region: str = 'Georgia'
 LAN_timezone: str = 'America/New_York'
 
 if not isdir(working_dir):
-    working_dir = './'
+    working_dir: str = './'
 
 
 # Log Dates - Some distros may log dates and times slightly differently
@@ -62,8 +62,8 @@ else:
 
 class ApiError(Exception):
     def __init__(self, ip=None):
-        self.ips: str = ip
-        self.messages: str = f'API returned 404 error. Perhaps an invalid ip address was sent. IP: {self.ip}'
+        self.ip: str = ip
+        self.message: str = f'API returned 404 error. Perhaps an invalid ip address was sent. IP: {self.ip}'
 
     def __str__(self):
         return self.message
