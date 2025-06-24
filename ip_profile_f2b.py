@@ -2,7 +2,9 @@
 from datetime import datetime as dt, timedelta as td
 import sqlite3
 import pandas as pd
-from ip_profile_lib import ip_info, db_con, logger, my_token, sql_date, ApiConnectionErrors, db_cursor
+from ip_profile_lib import (
+    ip_info, db_con, logger, my_token, sql_date, ApiConnectionErrors, db_cursor, convert_to_sql_type
+)
 
 # User defined vars
 db_f2b = '/var/lib/fail2ban/fail2ban.sqlite3'  # DB used by Fail2ban (default)
@@ -72,6 +74,7 @@ else:
             entry = ip_info(ip, my_token)  # Call the API func and get the data in a dict
             entry['date'] = sql_date       # Yesterday's date
             entry['time'] = time           # Time of ban
+            entry = convert_to_sql_type(entry)
             df_entry = pd.DataFrame([entry])  # Convert to dataframe
             # Concatenate new data with old data using pandas.concat()
             df_my_database = pd.concat(objs=[df_my_database, df_entry], ignore_index=True)
