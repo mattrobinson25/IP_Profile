@@ -42,10 +42,18 @@ db_cursor = db_con.cursor()
 
 
 if api_token_file and isfile(api_token_file):
-    with open(api_token_file, 'r') as f:
-        my_token = f.read()[:-1]
+    my_token : str | None
+
+    with open(api_token_file, 'r') as file:
+        my_token : str = file.read()
+
+    if '?token=' not in my_token:
+        my_token : str = '?token=' + my_token
+
+    my_token = my_token.replace('\n', '')
+    my_token = my_token.replace(' ', '')
 else:
-    my_token = None
+    my_token : None = None
 
 
 class ApiError(Exception):
