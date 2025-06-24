@@ -533,6 +533,6 @@ class MyLogger(logging.Logger):
         if to_file:
             self.file_stream : logging.FileHandler = logging.FileHandler(to_file)
             self.logger.addHandler(self.file_stream)
-            self.to_file.setFormatter(self.fmt)
+            self.file_stream.setFormatter(self.fmt)
 
         self.logger.setLevel(level)
