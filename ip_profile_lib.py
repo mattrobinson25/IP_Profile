@@ -41,17 +41,21 @@ db_con = sqlite3.connect(db_file)
 db_cursor = db_con.cursor()
 
 
+my_token : str | None = None
 if api_token_file and isfile(api_token_file):
-    my_token : str | None
-
     with open(api_token_file, 'r') as file:
-        my_token : str = file.read()
+        my_tokens : list[str] = file.readlines()
+
+    for token in my_tokens:
+        # scroll through file for token. Ignore commented lines and pick the last token specified.
+        if not token.startswith('#'):
+            my_token = token
 
     if '?token=' not in my_token:
         my_token : str = '?token=' + my_token
 
-    my_token = my_token.replace('\n', '')
-    my_token = my_token.replace(' ', '')
+    for whitespace in ['\n', ' ', '\t', '\r']:
+        my_token = my_token.replace(whitespace, '')  # replace with nothing. Same as deleting
 else:
     my_token : None = None
 
