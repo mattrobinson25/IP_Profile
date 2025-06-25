@@ -41,7 +41,7 @@ db_con: sqlite3.Connection = sqlite3.connect(db_file)
 db_cursor: sqlite3.Cursor = db_con.cursor()
 
 
-my_token : str | None = None
+my_token: str | None = None
 if api_token_file and isfile(api_token_file):
     with open(api_token_file, 'r') as file:
         my_tokens: list[str] = file.readlines()
