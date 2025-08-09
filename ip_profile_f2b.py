@@ -3,7 +3,7 @@ from datetime import datetime as dt, timedelta as td
 import sqlite3
 import pandas as pd
 from ip_profile_lib import (
-    ip_info, db_con, logger, my_token, sql_date, ApiConnectionErrors, db_cursor, convert_to_sql_type
+    ip_info, db_con, logger, my_token, sql_date, ApiConnectionErrors, db_cursor, convert_to_sql_type, days
 )
 
 # User defined vars
@@ -44,8 +44,11 @@ except pd.errors.DatabaseError as e:
         exit()
 
 # Dates and timestamps
-today_timestamp = dt.strptime(dt.now().strftime('%x'), '%x').timestamp()  # Midnight timestamp
-yesterday_timestamp = dt.strptime((dt.now() - td(days=1)).strftime('%x'),'%x').timestamp()  # Yesterday midnight timestamp
+today_timestamp = dt.strptime(
+    (dt.now() - td(days=(days-1))).strftime('%x'),
+    '%x'
+).timestamp()  # Midnight timestamp
+yesterday_timestamp = dt.strptime((dt.now() - td(days=days)).strftime('%x'),'%x').timestamp()  # Yesterday midnight timestamp
 
 
 # Personal database with added ip information

@@ -33,9 +33,10 @@ if not isdir(working_dir):
 
 
 # Log Dates - Some distros may log dates and times slightly differently
-sql_date: str = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-http_log_date: str = (datetime.now() - timedelta(days=1)).strftime('%d/%b/%Y')
-ssh_log_date: str = (datetime.now() - timedelta(days=1)).strftime('%b %e')
+days = 1
+sql_date: str = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+http_log_date: str = (datetime.now() - timedelta(days=days)).strftime('%d/%b/%Y')
+ssh_log_date: str = (datetime.now() - timedelta(days=days)).strftime('%b %e')
 # sql connector
 db_con: sqlite3.Connection = sqlite3.connect(db_file)
 db_cursor: sqlite3.Cursor = db_con.cursor()
