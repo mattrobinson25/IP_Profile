@@ -33,7 +33,7 @@ if not isdir(working_dir):
 
 
 # Log Dates - Some distros may log dates and times slightly differently
-days = 1
+days: int = 1  # how many days back to search in log ( 1 == yesterday )
 sql_date: str = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
 http_log_date: str = (datetime.now() - timedelta(days=days)).strftime('%d/%b/%Y')
 ssh_log_date: str = (datetime.now() - timedelta(days=days)).strftime('%b %e')
@@ -204,19 +204,17 @@ match distro:
     # find http logs based on distro
     case 'ubuntu' | 'debian':
         auth_file_dir: str = '/var/log/apache2/'  # http log files directory
-        ssh_log_files: list[str] = [f'/var/log/{file}' for file in listdir('/var/log/') if file.startswith('auth.log')]
+        ssh_log_files: list[str] = [f'/var/log/{file}' for file in listdir('/var/log/')
+                                    if file.startswith('auth.log')]
 
     case 'centos' | 'rhel' | 'rocky' | 'almalinux' | 'fedora':
         auth_file_dir: str = '/var/log/httpd/'  # http log files directory
-        ssh_log_files: list[str] = [f'/var/log/{file}' for file in listdir('/var/log/') if file.startswith('secure')]
-
+        ssh_log_files: list[str] = [f'/var/log/{file}' for file in listdir('/var/log/')
+                                    if file.startswith('secure')]
     case _:
         logging.warning(f'Unsupported OS -- {distro}')
         raise NotImplementedError(f'{distro.title()} is not currently supported.'
                                   f' Only supports Ubuntu, Debian, CentOs, RHEL, Rocky, AlmaLinux, and Fedora')
 
-http_log_files: list[str] = [
-    f'{auth_file_dir}/{file}'
-    for file in listdir(auth_file_dir)
-    if file.startswith('access.log')
-]
+http_log_files: list[str] = [f'{auth_file_dir}/{file}' for file in listdir(auth_file_dir)
+                             if file.startswith('access.log')]

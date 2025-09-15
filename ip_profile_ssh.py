@@ -1,5 +1,4 @@
 #!/nfs_share/matt_desktop/server_scripts/ip_profile/venv_311/bin/python3.11
-from sys import argv
 import pandas as pd
 import json
 from time import sleep
@@ -10,9 +9,9 @@ from ip_profile_lib import (
 
 # Try to get table from database if exists, or create new one
 try:
-    df_ssh = pd.read_sql('select * from ssh_user', db_con)
+    df_ssh: pd.DataFrame = pd.read_sql('select * from ssh_user', db_con)
 except pd.errors.DatabaseError as e:
-    error = e.args[0]
+    error: str = e.args[0]
 
     if 'no such table' in error:  # No such table found. Creating now.
         logger.info('Creating table')
@@ -34,67 +33,66 @@ except pd.errors.DatabaseError as e:
             anycast TEXT
             )''')
 
-        df_ssh = pd.read_sql('select * from ssh_user', db_con)  # Blank data frame from new table
+        df_ssh: pd.DataFrame = pd.read_sql('select * from ssh_user', db_con)  # Blank data frame from new table
     else:
         logger.critical('Failed to create table.')
         logger.critical(e)
-        logger.critical('Exiting.')
         raise ConnectionError('Database connection failed')
 
 
 logger.info(' SSH USERNAMES '.center(40, "#"))
-failed_requests = []
+failed_requests: list[dict[str, str]] = []
 logger.debug(ssh_log_files)
 
-trusted_ips_counter = 0
+trusted_ips_counter: int = 0
 
 # Go through the ssh auth files and find IP addresses that failed to connect.
 for ssh_log_file in ssh_log_files:
-    lines = log_reader(ssh_log_file)
+    lines: list[str] = log_reader(ssh_log_file)
 
     for line in lines:  # find the indexes of 'time', 'user', and 'ip' in the matched lines (to use with .split())
         if ('Connection closed by invalid user' in line
                 and ssh_log_date in line
                 and LAN_prefix not in line):
-            line_elements = (2, 10, 11)  # (2, -5, -4)
+            line_elements: tuple[int, int, int] = (2, 10, 11)  # (2, -5, -4)
         elif ('Connection closed by authenticating user' in line
               and ssh_log_date in line
               and LAN_prefix not in line):
-            line_elements = (2, 10, 11)  # (2, -5, -4)
+            line_elements: tuple[int, int, int] = (2, 10, 11)  # (2, -5, -4)
         elif ('Disconnected from invalid user' in line
               and ssh_log_date in line
               and LAN_prefix not in line):
-            line_elements = (2, 9, 10)  # (2, -5, -4)
+            line_elements: tuple[int, int, int] = (2, 9, 10)  # (2, -5, -4)
         elif ('Disconnected from authenticating user' in line
               and ssh_log_date in line
               and LAN_prefix not in line):
-            line_elements = (2, 9, 10)
+            line_elements: tuple[int, int, int] = (2, 9, 10)
         elif ('Disconnecting invalid user' in line
               and ssh_log_date in line
               and LAN_prefix not in line):
-            line_elements = (2, 8, 9)
+            line_elements: tuple[int, int, int] = (2, 8, 9)
         else:
-            line_elements = None  # line is logging something unrelated. Ignore.
+            line_elements: None = None  # line is logging something unrelated. Ignore.
 
         if line_elements:
             # split the line and grab the related elements (based on its unique indexes)
             x, y, z = line_elements
-            time = line.split()[x]
-            user = line.split()[y]
-            ip = line.split()[z]
+            time: str = line.split()[x]
+            user: str = line.split()[y]
+            ip: str = line.split()[z]
 
             """Some offenders will try to use a literal whitespace as the username, resulting in a whitespace where
             the username should be. That is problematic for .split(). This if-statement offsets the problem. Also,
             it is necessary to slice off the first 7 characters because dates will sometimes have a double white-
             space too since the date format is '%b %e' -- eg: Jan  1."""
 
-            if '  ' in line[7:]:        # notice the double-whitespace in the quotes
-                user = "\' \'"          # A whitespace inside literal single-quotes will be entered into the database
-                ip = line.split()[z-1]  # 'ip' needs to be offset by -1 in .split(). And 'time' element is unaffected
+            if '  ' in line[7:]:             # notice the double-whitespace in the quotes
+                user: str = "\' \'"          # A whitespace inside literal single-quotes will be entered into the database
+                ip: str = line.split()[z-1]  # 'ip' needs to be offset by -1 in .split(). And 'time' element is unaffected
 
-            if ip not in trusted_ips:   # Trusted ips will not be recorded
+            if ip not in trusted_ips:  # Trusted ips will not be recorded
                 # Check to see how many prior attempts were made yesterday
-                ip_entries = df_ssh[
+                ip_entries: int = df_ssh[
                     (df_ssh.ip == ip) &
                     (df_ssh.user == user) &
                     (df_ssh.date == sql_date)
@@ -102,7 +100,7 @@ for ssh_log_file in ssh_log_files:
 
                 if ip_entries == 0:  # a new attempt was made
                     try:
-                        entry: dict = ip_info(ip, my_token)  # Gather info about ip address from the api
+                        entry: dict[str, str | int] = ip_info(ip, my_token)  # Gather info about ip address from the api
                         entry['user']: str = user  # Add user, date, attempts, and time to the dict
                         entry['date']: str = sql_date
                         entry['attempts']: int = 1
@@ -111,11 +109,11 @@ for ssh_log_file in ssh_log_files:
                         entry = convert_to_sql_type(entry)
 
                         # Concat with old DataFrame
-                        df_entry = pd.DataFrame([entry])  # Convert to DataFrame
-                        df_ssh = pd.concat([df_ssh, df_entry], ignore_index=True)
+                        df_entry: pd.DataFrame = pd.DataFrame([entry])  # Convert to DataFrame
+                        df_ssh: pd.DataFrame = pd.concat([df_ssh, df_entry], ignore_index=True)
 
                     except ApiConnectionErrors as e:
-                        failed_entry: dict = {
+                        failed_entry: dict[str, str] = {
                             'ip': ip,
                             'user': user,
                             'time': time,
@@ -129,7 +127,7 @@ for ssh_log_file in ssh_log_files:
                         logger.error(line)
                         sleep(60)  # possible connection issue. Wait for resolution and continue
                 else:  # Attempt was already made. Increase 'attempt' counter by one in sql.
-                    df_index = df_ssh[
+                    df_index: int = df_ssh[
                         (df_ssh.ip == ip) &
                         (df_ssh.user == user) &
                         (df_ssh.date == sql_date)
@@ -138,14 +136,14 @@ for ssh_log_file in ssh_log_files:
                     # Increase the 'attempts' by one.
                     df_ssh.at[df_index, 'attempts'] += 1
                     # Create a list of all times a connection was attempted
-                    attempt_times = json.loads(df_ssh.at[df_index, 'attempt_times'])
+                    attempt_times: list[str] = json.loads(df_ssh.at[df_index, 'attempt_times'])
                     attempt_times.append(time)
                     # Convert list into string and insert into sql
                     df_ssh.at[df_index, 'attempt_times'] = json.dumps(attempt_times)
             else:
                 trusted_ips_counter += 1
 
-attempts_counter = df_ssh[df_ssh.date == sql_date].attempts.sum()
+attempts_counter: int = df_ssh[df_ssh.date == sql_date].attempts.sum()
 
 if attempts_counter == 0:
     logger.info(f'No new connections found. Done. {trusted_ips_counter} trusted ips found.')
@@ -156,7 +154,7 @@ else:
         if_exists='replace',
         index=False
     )
-    num_unique_ips = df_ssh[df_ssh.date == sql_date].ip.nunique()
+    num_unique_ips: int = df_ssh[df_ssh.date == sql_date].ip.nunique()
     logger.info(f'{num_unique_ips} ips connected. {attempts_counter} attempts made. {trusted_ips_counter} trusted ips')
 
 handle_failed_requests(failed_requests)
